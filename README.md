@@ -37,7 +37,7 @@ Redirect URI: `https://login.live.com/oauth20_desktop.srf`.
 
 The flow is Microsoft → Xbox Live → XSTS → Minecraft Services → ownership entitlements → Java profile. Every launch refreshes authentication and checks ownership before downloading/installing the game or spawning its process. There is no gameplay fallback when authentication or ownership fails.
 
-Entra registration is complete. Minecraft AppID approval has not been obtained, and no approval request has been submitted as of this release. API access requires review through the [official AppID review form](https://aka.ms/mce-reviewappid). This repository and release are available for that review.
+Entra registration is complete. A Minecraft AppID approval request was submitted through the [official AppID review form](https://aka.ms/mce-reviewappid) on 2026-10-27, referencing this repository and release v0.2.1. The form confirmed receipt with “Thank you for contacting Mojang Studios.” Approval has not yet been granted. The form states that submissions are reviewed weekly; this is not a guaranteed response deadline.
 
 ## Build and verification
 
