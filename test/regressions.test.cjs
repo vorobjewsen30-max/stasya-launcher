@@ -58,9 +58,6 @@ test('stop is idempotent and failed process termination re-enables controls',()=
   const e=new Engine('unused',()=>{},{});e.state={accounts:[],instances:[],settings:{}};let count=0;e.process={kill:()=>{count++;return true;}};e.stop();e.stop();assert.equal(count,1);assert.equal(e.stopping,true);
   e.stopping=false;e.process={kill:()=>false};assert.throws(()=>e.stop(),/Не удалось остановить/);assert.equal(e.stopping,false);
 });
-test('custom proxy source rewrites mrpack CDN URLs too',()=>{
-  const {rewriteUrl}=require('../lib/util.cjs');assert.equal(rewriteUrl('https://cdn.modrinth.com/data/mod.jar',{source:'custom',proxyCdn:'https://cdn.example'}),'https://cdn.example/data/mod.jar');
-});
 test('failed rollback retains backups instead of deleting the last recoverable copy',async()=>{
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'stasya-recovery-'));const originalCopy=fs.copyFile;
   try{const e=new Engine(dir,()=>{},{});await e.init();e.state.instances.push({id:'i',name:'Test',mods:[{project:'p',file:'old.jar'}]});const mods=path.join(e.folder('i'),'mods');await fs.mkdir(mods,{recursive:true});await fs.writeFile(path.join(mods,'old.jar'),'recoverable');e.save=async()=>{throw new Error('save failed');};

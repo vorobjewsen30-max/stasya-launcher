@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-10-29
+
+- Choose the target instance before installing content; the newest compatible version is selected automatically.
+- Required Modrinth dependencies are resolved recursively with exact version pins and conflict detection.
+- Resource packs and shaders install into their own instance directories.
+- Redesigned catalog tabs and target selection. Direct Modrinth access; proxy controls removed.
+- Rollback covers the entire dependency installation across content directories.
+- Owner confirmed Mojang approval, Microsoft sign-in and licensed multiplayer access.
+
 ## 0.2.1 — preview, 2026-10-27
 
 Initial public source and Windows x64 preview release.
