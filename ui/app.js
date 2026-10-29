@@ -1,21 +1,21 @@
 const api = window.stasya;
 const $ = id => document.getElementById(id);
-let state, manifest, offset = 0, totalResults = 0, catalogRequest = 0, catalogKey = '', toastTimer, progressTimer, pendingInstall, catalogType = 'mod';
+let state, manifest, offset = 0, totalResults = 0, catalogRequest = 0, catalogKey = '', toastTimer, progressTimer, pendingInstall, currentModsId, renderingPicker=false, catalogType = 'mod';
 const names = {home:'Главная',library:'Мои сборки',catalog:'Каталог модов',accounts:'Аккаунты',settings:'Настройки',logs:'Журнал запуска'};
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
 function button(text, cls, fn) { const b = el('button', cls, text); b.type = 'button'; b.onclick = () => act(fn, b); return b; }
 function toast(text, error = false) { $('toast').textContent = text; $('toast').className = error ? 'error' : ''; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').className = 'hidden', error ? 12000 : 5000); }
 function log(text) { const p = $('log-output'); p.textContent = (p.textContent + text + '\n').slice(-180000); p.scrollTop = p.scrollHeight; }
 async function act(fn, b) { if (b) b.disabled = true; try { return await fn(); } catch (e) { toast(e.message, true); log('[Ошибка] ' + e.message);if(['NO_LICENSE','LICENSE_REQUIRED'].includes(e.code))page('accounts'); } finally { if (b) b.disabled = false; updatePlay(); } }
-function page(id) { document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === id)); document.querySelectorAll('.nav').forEach(n => n.classList.toggle('active', n.dataset.page === id)); $('page-name').textContent = names[id]; if (id === 'catalog') refreshCatalog(); if (id === 'settings') settings(); }
+function page(id) { InstancePicker.close(); document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === id)); document.querySelectorAll('.nav').forEach(n => n.classList.toggle('active', n.dataset.page === id)); $('page-name').textContent = names[id]; if (id === 'catalog') refreshCatalog(); if (id === 'settings') settings(); }
 function selected() { return state.instances.find(i => i.id === state.selectedInstance); }
 function updatePlay() {
   if (!state) return;const s=getLaunchState(state);
   $('play').disabled=s.disabled;$('play').textContent=s.label;$('play').title=s.hint;$('ready').textContent=s.hint;
   $('launch-login').classList.toggle('hidden',!['account','license'].includes(s.action));$('launch-login').textContent=s.action==='license'?'Подключить лицензию →':'Войти через Microsoft →';$('launch-create').classList.toggle('hidden',s.action!=='instance');$('launch-import').classList.toggle('hidden',s.action!=='instance');
-  for(const id of ['instance-select','create-instance','import-pack','microsoft'])if($(id))$(id).disabled=!!(state.busy||state.running);
+  for(const id of ['instance-select','create-instance','import-pack','microsoft','upload-jar','mods-import-jar'])if($(id))$(id).disabled=!!(state.busy||state.running);
   if($('microsoft'))$('microsoft').textContent=state.busy && state.operation?.includes('Microsoft')?'Ожидаем вход Microsoft…':'▦  Войти через Microsoft';
-  if(!state.busy)$('status-text').textContent=s.hint;
+  if(!state.busy)$('status-text').textContent=s.hint;InstancePicker.refresh();
 }
 function render() {
   $('instance-count').textContent = state.instances.length;
@@ -25,9 +25,9 @@ function render() {
   const select = $('instance-select'); select.replaceChildren();
   if (!state.instances.length) select.add(new Option('Создай первую сборку',''));
   else if(!state.instances.some(i=>i.id===state.selectedInstance))select.add(new Option('Выберите сборку',''));
-  for (const i of state.instances) select.add(new Option(i.name, i.id));select.value=state.instances.some(i=>i.id===state.selectedInstance)?state.selectedInstance:'';
+  for (const i of state.instances){const option=new Option(i.name,i.id);option.dataset.detail='Minecraft '+i.minecraft+' · '+i.loader;select.add(option);}select.value=state.instances.some(i=>i.id===state.selectedInstance)?state.selectedInstance:'';
   drawInstances($('home-instances'), state.instances.slice(0, 2), true); drawInstances($('library-instances'), state.instances, true);
-  drawAccounts(); updatePlay(); fillCatalogTarget();
+  drawAccounts(); updatePlay(); fillCatalogTarget();InstancePicker.refresh();
 }
 function drawInstances(container, list, add) {
   container.replaceChildren();
@@ -63,7 +63,7 @@ async function newInstance() {
   if (!manifest) { $('new-version').replaceChildren(new Option('Получаем версии…','')); try { manifest = await api.versions(); } catch (e) { $('new-dialog').close(); throw e; } }
   versionOptions();
 }
-async function showMods(id) {
+async function showMods(id) { currentModsId=id;
   const list = $('mod-list'); list.replaceChildren(el('p','muted','Читаем файлы сборки…')); $('mods-dialog').showModal();
   let mods;try{mods=await api.mods(id);}catch(e){list.replaceChildren(el('p','muted','Не удалось прочитать моды: '+e.message));throw e;}list.replaceChildren();
   if (!mods.length) list.append(el('p','muted','Модов пока нет. Установи их через каталог.'));
@@ -71,10 +71,10 @@ async function showMods(id) {
 }
 function targetOptions(select,preferred,type=catalogType) {
   select.replaceChildren(new Option('Выберите сборку…',''));
-  for(const i of state.instances){const option=new Option(i.name+' · '+i.minecraft+' · '+i.loader,i.id);option.disabled=type==='mod' && i.loader==='vanilla';select.add(option);}
-  select.value=state.instances.some(i=>i.id===preferred && (type!=='mod' || i.loader!=='vanilla'))?preferred:'';
+  for(const i of state.instances){const option=new Option(i.name,i.id);option.dataset.detail='Minecraft '+i.minecraft+' · '+i.loader;option.disabled=['mod','jar'].includes(type) && i.loader==='vanilla';select.add(option);}
+  select.value=state.instances.some(i=>i.id===preferred && (!['mod','jar'].includes(type) || i.loader!=='vanilla'))?preferred:'';InstancePicker.refresh();
 }
-function fillCatalogTarget(){const select=$('catalog-instance');targetOptions(select,select.value || state.selectedInstance);select.disabled=!!(state.busy||state.running) || catalogType==='modpack';}
+function fillCatalogTarget(){const select=$('catalog-instance');targetOptions(select,select.value || state.selectedInstance);select.disabled=!!(state.busy||state.running) || catalogType==='modpack';InstancePicker.refresh();}
 function refreshCatalog(){catalogRequest++;fillCatalogTarget();act(searchCatalog);}
 async function searchCatalog() {
   const request = ++catalogRequest; const type = catalogType; const i = state.instances.find(i=>i.id===$('catalog-instance').value);
@@ -96,15 +96,16 @@ async function searchCatalog() {
 function updateInstallTarget(){
   const i=state.instances.find(i=>i.id===$('install-target').value),pack=pendingInstall?.type==='modpack';
   $('install-note').textContent=pack?'Будет скачан новейший модпак и создана новая сборка.':i?'Сборка «'+i.name+'» · Minecraft '+i.minecraft+' · '+i.loader:'Выбери сборку. Для модов нужен загрузчик Fabric, Forge, NeoForge или Quilt.';
-  $('install-confirm').disabled=!!(state.busy||state.running) || (!pack && (!i || (pendingInstall?.type==='mod' && i.loader==='vanilla')));
+  $('install-confirm').disabled=!!(state.busy||state.running) || (!pack && (!i || (['mod','jar'].includes(pendingInstall?.type) && i.loader==='vanilla')));
 }
 function chooseInstall(project,type){
   if(state.busy || state.running)throw new Error('Закрой Minecraft и дождись завершения установки');
   pendingInstall={project:project.project_id,type};$('install-title').textContent=project.title;
   targetOptions($('install-target'),$('catalog-instance').value || state.selectedInstance,type);
   const pack=type==='modpack';$('install-target-row').classList.toggle('hidden',pack);$('install-target').disabled=pack;$('install-target').required=!pack;
-  $('install-auto-note').textContent=type==='shader'?'Скачиваем ZIP в shaderpacks. Для включения нужен Iris или другой совместимый загрузчик шейдеров; после установки выбери шейдер в настройках Minecraft.':type==='resourcepack'?'Скачиваем ZIP в resourcepacks. После установки включи ресурспак в настройках Minecraft.':'Новейшая совместимая версия и обязательные зависимости будут выбраны автоматически.';
-  updateInstallTarget();$('install-dialog').showModal();
+  $('install-confirm').textContent=type==='jar'?'Выбрать JAR…':'Установить';
+  $('install-auto-note').textContent=type==='jar'?'Можно выбрать несколько JAR. Проверь версию Minecraft и зависимости своих модов; автоматически они подбираются только при установке из Modrinth.':type==='shader'?'Скачиваем ZIP в shaderpacks. Для включения нужен Iris или другой совместимый загрузчик шейдеров; после установки выбери шейдер в настройках Minecraft.':type==='resourcepack'?'Скачиваем ZIP в resourcepacks. После установки включи ресурспак в настройках Minecraft.':'Новейшая совместимая версия и обязательные зависимости будут выбраны автоматически.';
+  updateInstallTarget();$('install-dialog').showModal();InstancePicker.refresh();
 }
 
 document.querySelectorAll('.nav').forEach(b => b.onclick=()=>page(b.dataset.page));
@@ -124,8 +125,10 @@ $('search-button').onclick=()=>{offset=0;act(searchCatalog,$('search-button'));}
  tab.tabIndex=index===0?0:-1;tab.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[next].focus();tabs[next].click();};
 });
 $('catalog-instance').onchange=()=>{offset=0;act(searchCatalog);};
-$('install-target').onchange=updateInstallTarget;
-$('install-form').onsubmit=e=>{e.preventDefault();const data={...pendingInstall,instanceId:$('install-target').value};act(async()=>{const result=await api.installProject(data);$('install-dialog').close();toast(data.type==='modpack'?'Сборка добавлена в библиотеку':'Установлено: '+result.count+' · обязательных зависимостей: '+result.dependencyCount);},e.submitter);};
+$('install-target').onchange=()=>{updateInstallTarget();InstancePicker.refresh();};
+$('upload-jar').onclick=()=>act(()=>chooseInstall({title:'Свой JAR-мод'},'jar'));
+$('mods-import-jar').onclick=()=>{const id=currentModsId;$('mods-dialog').close();chooseInstall({title:'Свой JAR-мод'},'jar');$('install-target').value=id;updateInstallTarget();InstancePicker.refresh();};
+$('install-form').onsubmit=e=>{e.preventDefault();const data={...pendingInstall,instanceId:$('install-target').value};act(async()=>{const result=data.type==='jar'?await api.importJars(data.instanceId):await api.installProject(data);if(!result)return;$('install-dialog').close();toast(data.type==='jar'?'Добавлено JAR-модов: '+result.count:data.type==='modpack'?'Сборка добавлена в библиотеку':'Установлено: '+result.count+' · обязательных зависимостей: '+result.dependencyCount);},e.submitter);};
 $('prev').onclick=()=>{offset=Math.max(0,offset-18);act(searchCatalog);};$('next').onclick=()=>{offset+=18;act(searchCatalog);};$('clear-logs').onclick=()=>$('log-output').textContent='';
 api.onEvent(e=>{
   if(e.kind==='state'){state=e.state;render();if(!state.busy) { clearTimeout(progressTimer); progressTimer=setTimeout(()=>$('progress-box').classList.add('hidden'),1800); }}
@@ -134,4 +137,5 @@ api.onEvent(e=>{
   else if(e.kind==='exit'){log('Minecraft завершён с кодом '+e.code);$('status-text').textContent='Minecraft завершён';toast(e.stopped?'Игра остановлена.':e.code===0?'До следующего приключения!':'Minecraft завершился с ошибкой. Открой журнал запуска.',!e.stopped && e.code!==0);}
   else if(e.kind==='notice')toast(e.text);else if(e.kind==='failure'){toast(e.text,true);log(e.text);}
 });
+['instance-select','catalog-instance','install-target'].forEach(id=>InstancePicker.enhance($(id)));
 act(async()=>{state=await api.state();render();settings();});

@@ -11,3 +11,5 @@ Removing an account through the Accounts page removes its stored entry and encry
 Game output is retained in the interface and games may write their own logs. Do not post account caches, `state.json`, tokens or unreviewed logs to public issues. The launcher filters the current Minecraft access token from forwarded process output, but cannot guarantee that third-party mods will never write other personal information.
 
 Privacy and security questions: use the [repository issue tracker](https://github.com/vorobjewsen30-max/stasya-launcher/issues) without including secrets or personal documents.
+
+Manually selected JAR files are read and validated on the computer, then copied into the chosen instance. The launcher does not upload these files to Modrinth or another service. Imported mods themselves can perform network operations when the user runs Minecraft.

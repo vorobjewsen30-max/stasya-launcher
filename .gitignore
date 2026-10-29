@@ -6,3 +6,4 @@ release/
 *.pfx
 *.pem
 state.json
+store/identity.json

@@ -2,15 +2,20 @@
 
 A Minecraft: Java Edition launcher for Windows x64, with a Russian interface, managed instances, Modrinth browsing and `.mrpack` imports.
 
-**Version 0.3.0.** Mojang AppID approval was confirmed by email on 2026-10-29. The owner has confirmed Microsoft sign-in, a licensed Minecraft launch and joining a multiplayer server. This is user-confirmed testing, not an automated test of the owner’s account.
+**Version 0.4.0.** Mojang AppID approval was confirmed by email on 2026-10-29. The owner has confirmed Microsoft sign-in, a licensed Minecraft launch and joining a multiplayer server. This is user-confirmed testing, not an automated test of the owner’s account.
 
-[Download Windows x64](https://github.com/vorobjewsen30-max/stasya-launcher/releases/tag/v0.3.0) · [Report an issue](https://github.com/vorobjewsen30-max/stasya-launcher/issues) · [Privacy](PRIVACY.md)
+[Download Windows x64](https://github.com/vorobjewsen30-max/stasya-launcher/releases/tag/v0.4.0) · [Report an issue](https://github.com/vorobjewsen30-max/stasya-launcher/issues) · [Privacy](PRIVACY.md)
 
 ![Stasya Launcher interface](docs/preview.png)
 
 ![Modrinth catalog](docs/catalog.png)
 
+![Instance picker](docs/instance-picker.png)
+
 ## Возможности
+
+- Добавление своих JAR-модов в выбранную сборку, в том числе нескольких файлов сразу. Проверяется архив и описание мода для загрузчика; свои файлы не отправляются на внешние сервисы. Совместимость Minecraft и зависимости своих JAR пользователь проверяет самостоятельно.
+- Поиск и переключение сборок через оформленные меню: кликабельна вся кнопка, есть клавиатурное управление и отметка выбранной сборки.
 
 - Вход личным Microsoft-аккаунтом. Авторизация и владение Minecraft Java проверяются перед каждым игровым запуском; при ошибке запуск блокируется.
 - Отдельные игровые папки сборок, настройка памяти, журнал и восстановление игровых ресурсов.
@@ -51,7 +56,7 @@ npm start
 npm run build
 ```
 
-Build output: `release/Stasya-Launcher-0.3.0-Windows-x64.exe`.
+Build output: `release/Stasya-Launcher-0.4.0-Windows-x64.exe`.
 
 Interface check using isolated data:
 
@@ -66,3 +71,7 @@ See [TESTING.md](TESTING.md) for verified behavior and remaining limitations. Do
 Source: MIT. Dependencies retain their own licenses. Main projects: [Electron](https://www.electronjs.org/), [XMCL](https://github.com/Voxelum/minecraft-launcher-core-node), [MSAL Node](https://github.com/AzureAD/microsoft-authentication-library-for-js), [Modrinth API](https://docs.modrinth.com/api/) and [Adoptium](https://api.adoptium.net/).
 
 Stasya Launcher is an independent project, not an official Mojang, Microsoft, Xbox or Modrinth product. Minecraft requires a separate valid license. The project does not distribute Minecraft binaries or third-party mods in its releases.
+
+## Store preparation
+
+The release includes a per-user offline NSIS installer and a Store preparation kit with listing drafts, icons, screenshots and a schema-validated WinGet manifest. An unsigned MSIX preview is structurally validated by MakeAppx and kept as a local preparation artifact. This is not Microsoft Store certification or a published WinGet listing. Real Partner Center identity, account verification and certification checks are still required; EXE/MSI Store submission requires valid code signing. See [store/README.md](store/README.md).

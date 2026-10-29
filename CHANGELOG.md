@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 — 2026-10-29
+
+- Import one or more custom JAR mods into a chosen instance with archive and loader validation.
+- Searchable instance menus open across the full button, including the home selector surface and label.
+- Disable an older manually imported version of the same mod ID; roll back failures.
+- Offline NSIS installer and Store preparation tools, assets, listing drafts and WinGet manifest.
+- MSIX packaging-preview validation; actual Store identity, signing where required and certification remain external steps.
+
 ## 0.3.0 — 2026-10-29
 
 - Choose the target instance before installing content; the newest compatible version is selected automatically.
